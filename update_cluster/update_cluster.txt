@@ -1,0 +1,43 @@
+# list the etcd nodes
+sudo ETCDCTL_API=3 etc# list the etcd nodesdctl --endpoints 10.0.0.248:2379 --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key --cacert=/etc/kubernetes/pki/etcd/ca.crt member list -w table
+# take a snapshot of the etcd database
+sudo ETCDCTL_API=3 etcdctl --endpoints 10.0.0.248:2379 --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key --cacert=/etc/kubernetes/pki/etcd/ca.crt snapshot save /var/lib/etcd/snapshot.db
+# find the lates kubeadm kubelet kubectl versions
+sudo apt-cache madison kubeadm
+# mark the kubernetes binaries unhold
+sudo apt-mark unhold kubeadm kubelet kubectl
+# install the specific version for this update
+sudo apt-get install -y kubelet=1.23.6-00 kubeadm=1.23.6-00 kubectl=1.23.6-00
+# mark the kubernetes binaries as hold, not able to update
+sudo apt-mark hold kubeadm kubectl kubelet
+# drain the master
+kubectl drain k8scp --ignore-daemonsets
+# check the upgrade plane
+sudo kubeadm upgrade plan
+# apply the desired upgrade, should be shown in the output of the previous command
+sudo kubeadm upgrade apply v1.23.6
+# reload the daemon
+sudo systemctl daemon-reload
+# restart kubelet with the newer version
+sudo systemctl restart kubelet
+# uncordon the master
+kubectl uncordon k8scp
+
+## update the worker node needs to be done on each worker node
+# drain the worker node
+kubectl drain k8sworker --ignore-daemonsets
+# upgrade the node
+sudo kubeadm upgrade node
+# mark the kubernetes binaries unhold
+sudo apt-mark unhold kubeadm kubelet kubectl
+# install the specific version for this update
+sudo apt-get install -y kubelet=1.23.6-00 kubeadm=1.23.6-00 kubectl=1.23.6-00
+# mark the kubernetes binaries as hold, not able to update
+sudo apt-mark hold kubeadm kubectl kubelet
+# reload the daemon
+sudo systemctl daemon-reload
+# restart kubelet with the newer version
+sudo systemctl restart kubelet
+# uncordon the worker node 
+kubectl uncordon k8sworker
+
